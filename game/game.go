@@ -5,6 +5,9 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+type Round struct {
+}
+
 type User struct {
 	profile *discordgo.User
 	score   int
@@ -36,4 +39,8 @@ func JoinGame(channelId string, user *discordgo.User) {
 		profile: user,
 		score:   0,
 	}
+}
+
+func StartMatch(channelId string) {
+
 }
