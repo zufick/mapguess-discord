@@ -7,7 +7,6 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -72,7 +71,6 @@ func getRegionSequences(region Region) RegionsResponse {
 
 func getSequence(regionSequences RegionsResponse) SequenceResponse {
 	var sequence SequenceResponse
-	fmt.Println("\nLEN " + strconv.Itoa(len(regionSequences.Result.Data)) + " \n")
 	var regSequence = regionSequences.Result.Data[rand.Intn(len(regionSequences.Result.Data))]
 	fetchApi(fmt.Sprintf("https://api.openstreetcam.org/2.0/sequence/%s/photos", regSequence.Id), &sequence)
 	sequence.CountryCode = regSequence.CountryCode

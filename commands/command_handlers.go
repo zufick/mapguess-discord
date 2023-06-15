@@ -10,12 +10,12 @@ var (
 		"start": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			err := game.StartGame(i.ChannelID)
 			if err != nil {
-				s.InteractionRespond(i.Interaction, game.GetGameExistsResponse())
+				s.InteractionRespond(i.Interaction, GetGameExistsResponse())
 			}
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: game.GetGameInvitationResponse(i.ChannelID),
+				Data: GetGameInvitationResponse(i.ChannelID),
 			})
 		},
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 	"mapguess-discord/commands"
+	"mapguess-discord/game"
 	"os"
 	"os/signal"
 	"syscall"
@@ -30,6 +31,7 @@ func main() {
 		return
 	}
 
+	game.SetSession(dg)
 	commands.RegisterCommands(dg)
 
 	// Wait here until CTRL-C or other term signal is received.
