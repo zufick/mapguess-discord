@@ -24,10 +24,6 @@ func RegisterCommands(dg *discordgo.Session) {
 		case discordgo.InteractionMessageComponent:
 			if h, ok := invitationHandlers[i.MessageComponentData().CustomID]; ok {
 				h(s, i)
-			} else {
-				if h, ok := answerHandlers[i.MessageComponentData().CustomID]; ok {
-					h(s, i)
-				}
 			}
 		}
 	})
