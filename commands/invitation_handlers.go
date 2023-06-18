@@ -8,7 +8,16 @@ import (
 var (
 	invitationHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"invitation_join": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			game.JoinGame(i.ChannelID, i.Interaction)
+			err := game.JoinGame(i.ChannelID, i.Interaction)
+			if err != nil {
+				s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: err.Error(),
+					},
+				})
+				return
+			}
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseUpdateMessage,
@@ -16,14 +25,16 @@ var (
 			})
 		},
 		"invitation_start": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			//game.StartMatch(i.ChannelID)
-			//game.GetCurrentRoundResponse(i.ChannelID)
 			g := game.GetGame(i.ChannelID)
+			if g.MatchStarted {
+				return
+			}
+
 			gi := NewGameInteractions(g)
 			g.RegisterGameListener(gi)
 			g.StartMatch()
 
-			s.InteractionResponseDelete(i.Interaction)
+			s.ChannelMessageDelete(i.ChannelID, i.Interaction.Message.ID)
 		},
 	}
 )

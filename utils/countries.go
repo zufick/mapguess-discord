@@ -285,3 +285,16 @@ func GetCountryCodeSymbol(x string) (string, error) {
 	}
 	return string(0x1F1E6+rune(x[0])-'A') + string(0x1F1E6+rune(x[1])-'A'), nil
 }
+
+func GetStringFromCountrySymbol(x string) string {
+	var s string
+	for _, i := range x {
+		s += string(i - 0x1F1E6 + 'A')
+	}
+	return s
+}
+
+func HasCountryCode(countryCode string) bool {
+	_, ok := countries[countryCode]
+	return ok
+}
