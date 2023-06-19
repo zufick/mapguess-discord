@@ -38,7 +38,7 @@ type Game struct {
 	Users              map[string]*User // user id - user
 	CurrentRound       *Round
 	CurrentRoundNumber int
-	gameListeners      []EventListener
+	eventListeners     []EventListener
 }
 
 type EventListener interface {
@@ -53,7 +53,7 @@ var (
 )
 
 func (g *Game) RegisterGameListener(l EventListener) {
-	g.gameListeners = append(g.gameListeners, l)
+	g.eventListeners = append(g.eventListeners, l)
 }
 
 func (r *Round) SetMessage(m *discordgo.Message) {
@@ -118,7 +118,7 @@ func (g *Game) StartRound() {
 		CountryOptions: c,
 	}
 
-	for _, gl := range g.gameListeners {
+	for _, gl := range g.eventListeners {
 		gl.OnRoundStart()
 	}
 }
@@ -133,7 +133,7 @@ func (g *Game) endRound() {
 		u.CurrentRoundAnswer = ""
 	}
 
-	for _, gl := range g.gameListeners {
+	for _, gl := range g.eventListeners {
 		gl.OnRoundEnd()
 	}
 
@@ -145,7 +145,7 @@ func (g *Game) endRound() {
 func (g *Game) endMatch() {
 	g.MatchStarted = false
 
-	for _, gl := range g.gameListeners {
+	for _, gl := range g.eventListeners {
 		gl.OnMatchEnd()
 	}
 	delete(games, g.ChannelId)
