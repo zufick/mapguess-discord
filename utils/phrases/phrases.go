@@ -16,10 +16,10 @@ const (
 	RoundEndedTitle             = "Round ended (%d / %d)"
 	RoundEndedText              = "Round ended! Correct country:"
 	RoundEndedWinners           = "Winners:"
-	RoundEndedUserScore         = "(+1 point, total: %d)"
+	RoundEndedUserScore         = ":medal:(+1 point, total: %d points)"
 	RoundEndedNoWinners         = "There are no winners"
 	RoundEndedRestartText       = "Press ▶ emoji to start the next round"
 	MatchEndedTitle             = "Match ended"
 	PlayerRating                = ":trophy: Player rating:"
-	PlayerPoints                = "(%d points)"
+	PlayerPoints                = "(total: %d points)"
 )

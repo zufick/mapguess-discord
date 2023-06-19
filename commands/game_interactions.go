@@ -179,13 +179,21 @@ func (gi *GameInteractions) GetRoundEndResponse() *discordgo.MessageSend {
 	countryEmoji, _ := countries.GetCountryCodeSymbol(gi.game.CurrentRound.CorrectCountry)
 	description := fmt.Sprintf(phrases.RoundEndedText+" %s %s.\n", countryEmoji, countries.GetCountryName(gi.game.CurrentRound.CorrectCountry))
 
-	if len(gi.game.CurrentRound.Winners) > 0 {
-		description += "\n" + phrases.RoundEndedWinners + "\n"
-		for _, w := range gi.game.CurrentRound.Winners {
-			description += fmt.Sprintf("%s "+phrases.RoundEndedUserScore+"\n", w.Profile.Username, w.Score)
+	users := gi.game.GetUsersSortedByScore()
+	for _, u := range users {
+		isWinner := false
+
+		for _, winnerUser := range gi.game.CurrentRound.Winners {
+			if winnerUser == u {
+				isWinner = true
+			}
 		}
-	} else {
-		description += phrases.RoundEndedNoWinners + "\n"
+
+		if isWinner {
+			description += "\n" + fmt.Sprintf("%s "+phrases.RoundEndedUserScore+"\n", u.Profile.Username, u.Score)
+		} else {
+			description += "\n" + fmt.Sprintf("%s "+phrases.PlayerPoints+"\n", u.Profile.Username, u.Score)
+		}
 	}
 
 	if gi.game.CurrentRoundNumber < game.MaxRounds {
