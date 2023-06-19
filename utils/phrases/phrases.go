@@ -18,4 +18,7 @@ const (
 	RoundEndedUserScore         = "(+1 point, total: %d)"
 	RoundEndedNoWinners         = "There are no winners"
 	RoundEndedRestartText       = "Press ▶ emoji to start the next round"
+	MatchEndedTitle             = "Match ended"
+	PlayerRating                = ":trophy: Player rating:"
+	PlayerPoints                = "(%d points)"
 )

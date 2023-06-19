@@ -7,6 +7,7 @@ import (
 	"mapguess-discord/utils/countries"
 	"mapguess-discord/utils/phrases"
 	"math/rand"
+	"sort"
 	"time"
 )
 
@@ -28,22 +29,27 @@ type User struct {
 }
 
 type Game struct {
-	MatchStarted  bool
-	ChannelId     string
-	Users         map[string]*User // user id - user
-	CurrentRound  *Round
-	gameListeners []GameListener
+	MatchStarted       bool
+	ChannelId          string
+	Users              map[string]*User // user id - user
+	CurrentRound       *Round
+	CurrentRoundNumber int
+	gameListeners      []GameListener
 }
 
 type GameListener interface {
 	OnRoundStart()
 	OnRoundEnd()
-	OnGameEnd()
+	OnMatchEnd()
 }
 
 var (
 	DiscordSession *discordgo.Session
 	games          = map[string]*Game{} // channel id - game
+)
+
+const (
+	MaxRounds = 2
 )
 
 func (g *Game) RegisterGameListener(l GameListener) {
@@ -92,6 +98,7 @@ func (game *Game) StartMatch() {
 }
 
 func (game *Game) StartRound() {
+	game.CurrentRoundNumber++
 	photos := api.GetRandomPhoto()
 
 	rand.Seed(time.Now().Unix())
@@ -129,6 +136,19 @@ func (game *Game) endRound() {
 	for _, gl := range game.gameListeners {
 		gl.OnRoundEnd()
 	}
+
+	if game.CurrentRoundNumber >= MaxRounds {
+		game.endMatch()
+	}
+}
+
+func (game *Game) endMatch() {
+	game.MatchStarted = false
+
+	for _, gl := range game.gameListeners {
+		gl.OnMatchEnd()
+	}
+	delete(games, game.ChannelId)
 }
 
 func (game *Game) SetUserAnswer(userId string, answer string) {
@@ -178,4 +198,18 @@ func GetGame(channelId string) *Game {
 
 func SetSession(s *discordgo.Session) {
 	DiscordSession = s
+}
+
+func (game *Game) GetUsersSortedByScore() []*User {
+	var users []*User
+
+	for _, u := range game.Users {
+		users = append(users, u)
+	}
+
+	sort.Slice(users, func(i, j int) bool {
+		return users[i].Score > users[j].Score
+	})
+
+	return users
 }

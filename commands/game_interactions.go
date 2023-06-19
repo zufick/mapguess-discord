@@ -21,9 +21,14 @@ func (gi *GameInteractions) OnRoundEnd() {
 	game.DiscordSession.ChannelMessageDelete(gi.game.ChannelId, gi.game.CurrentRound.Message.ID)
 	m, _ := game.DiscordSession.ChannelMessageSendComplex(gi.game.ChannelId, gi.GetRoundEndResponse())
 	gi.game.CurrentRound.ResultMessage = m
-	game.DiscordSession.MessageReactionAdd(m.ChannelID, m.ID, "▶")
+
+	if gi.game.CurrentRoundNumber < game.MaxRounds {
+		game.DiscordSession.MessageReactionAdd(m.ChannelID, m.ID, "▶")
+	}
 }
-func (gi *GameInteractions) OnGameEnd() {}
+func (gi *GameInteractions) OnMatchEnd() {
+	game.DiscordSession.ChannelMessageSendComplex(gi.game.ChannelId, gi.GetMatchEndResponse())
+}
 
 func OnMessageReaction(s *discordgo.Session, mr *discordgo.MessageReactionAdd) {
 	g := game.GetGame(mr.ChannelID)
@@ -165,7 +170,9 @@ func (gi *GameInteractions) GetRoundEndResponse() *discordgo.MessageSend {
 		description += phrases.RoundEndedNoWinners + "\n"
 	}
 
-	description += "\n" + phrases.RoundEndedRestartText + "\n"
+	if gi.game.CurrentRoundNumber < game.MaxRounds {
+		description += "\n" + phrases.RoundEndedRestartText + "\n"
+	}
 
 	return &discordgo.MessageSend{
 		Embeds: []*discordgo.MessageEmbed{
@@ -173,6 +180,23 @@ func (gi *GameInteractions) GetRoundEndResponse() *discordgo.MessageSend {
 				Title:       phrases.RoundEndedTitle,
 				Description: description,
 				Image:       &discordgo.MessageEmbedImage{URL: gi.game.CurrentRound.ImgUrl},
+			},
+		},
+	}
+}
+
+func (gi *GameInteractions) GetMatchEndResponse() *discordgo.MessageSend {
+	description := phrases.PlayerRating + "\n"
+
+	for _, u := range gi.game.GetUsersSortedByScore() {
+		description += fmt.Sprintf("%s "+phrases.PlayerPoints+"\n", u.Profile.Username, u.Score)
+	}
+
+	return &discordgo.MessageSend{
+		Embeds: []*discordgo.MessageEmbed{
+			{
+				Title:       phrases.MatchEndedTitle,
+				Description: description,
 			},
 		},
 	}
