@@ -162,11 +162,12 @@ func (gi *GameInteractions) GetCurrentRoundResponse() *discordgo.MessageSend {
 		description += fmt.Sprintf("\n %s - %s \n", symbol, name)
 	}
 
+	roundText := fmt.Sprintf(phrases.CurrentRoundMessageContent, gi.game.CurrentRoundNumber, game.MaxRounds)
 	return &discordgo.MessageSend{
-		Content: phrases.CurrentRoundMessageContent,
+		Content: roundText,
 		Embeds: []*discordgo.MessageEmbed{
 			{
-				Title:       phrases.CurrentRoundMessageContent,
+				Title:       roundText,
 				Description: description,
 				Image:       &discordgo.MessageEmbedImage{URL: gi.game.CurrentRound.ImgUrl},
 			},
@@ -194,7 +195,7 @@ func (gi *GameInteractions) GetRoundEndResponse() *discordgo.MessageSend {
 	return &discordgo.MessageSend{
 		Embeds: []*discordgo.MessageEmbed{
 			{
-				Title:       phrases.RoundEndedTitle,
+				Title:       fmt.Sprintf(phrases.RoundEndedTitle, gi.game.CurrentRoundNumber, game.MaxRounds),
 				Description: description,
 				Image:       &discordgo.MessageEmbedImage{URL: gi.game.CurrentRound.ImgUrl},
 			},
