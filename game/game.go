@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+const (
+	MaxRounds = 10
+)
+
 type Round struct {
 	ImgUrl         string
 	CorrectCountry string
@@ -34,10 +38,10 @@ type Game struct {
 	Users              map[string]*User // user id - user
 	CurrentRound       *Round
 	CurrentRoundNumber int
-	gameListeners      []GameListener
+	gameListeners      []EventListener
 }
 
-type GameListener interface {
+type EventListener interface {
 	OnRoundStart()
 	OnRoundEnd()
 	OnMatchEnd()
@@ -48,11 +52,7 @@ var (
 	games          = map[string]*Game{} // channel id - game
 )
 
-const (
-	MaxRounds = 2
-)
-
-func (g *Game) RegisterGameListener(l GameListener) {
+func (g *Game) RegisterGameListener(l EventListener) {
 	g.gameListeners = append(g.gameListeners, l)
 }
 
@@ -62,7 +62,7 @@ func (r *Round) SetMessage(m *discordgo.Message) {
 
 func StartGame(channelId string) error {
 	if _, exists := games[channelId]; exists == true {
-		return errors.New("Game already exists")
+		return errors.New(phrases.GameInvitationErrExists)
 	}
 
 	games[channelId] = &Game{
@@ -92,80 +92,80 @@ func JoinGame(channelId string, i *discordgo.Interaction) error {
 	return nil
 }
 
-func (game *Game) StartMatch() {
-	game.MatchStarted = true
-	game.StartRound()
+func (g *Game) StartMatch() {
+	g.MatchStarted = true
+	g.StartRound()
 }
 
-func (game *Game) StartRound() {
-	game.CurrentRoundNumber++
+func (g *Game) StartRound() {
+	g.CurrentRoundNumber++
 	photos := api.GetRandomPhoto()
 
 	rand.Seed(time.Now().Unix())
 	photo := photos.Result.Data[rand.Intn(len(photos.Result.Data))]
 
-	countries := countries.GetRandomCountriesExcept(photos.CountryCode)[:3:4]
-	countries = append(countries, photos.CountryCode)
+	c := countries.GetRandomCountriesExcept(photos.CountryCode)[:3:4]
+	c = append(c, photos.CountryCode)
 
 	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(countries), func(i, j int) {
-		countries[i], countries[j] = countries[j], countries[i]
+	rand.Shuffle(len(c), func(i, j int) {
+		c[i], c[j] = c[j], c[i]
 	})
 
-	game.CurrentRound = &Round{
+	g.CurrentRound = &Round{
 		ImgUrl:         photo.FileUrl,
 		CorrectCountry: photos.CountryCode,
-		CountryOptions: countries,
+		CountryOptions: c,
 	}
 
-	for _, gl := range game.gameListeners {
+	for _, gl := range g.gameListeners {
 		gl.OnRoundStart()
 	}
 }
 
-func (game *Game) endRound() {
-	game.CurrentRound.Ended = true
-	for _, u := range game.Users {
-		if u.CurrentRoundAnswer == game.CurrentRound.CorrectCountry {
+func (g *Game) endRound() {
+	g.CurrentRound.Ended = true
+	for _, u := range g.Users {
+		if u.CurrentRoundAnswer == g.CurrentRound.CorrectCountry {
 			u.Score += 1
-			game.CurrentRound.Winners = append(game.CurrentRound.Winners, u)
+			g.CurrentRound.Winners = append(g.CurrentRound.Winners, u)
 		}
 		u.CurrentRoundAnswer = ""
 	}
 
-	for _, gl := range game.gameListeners {
+	for _, gl := range g.gameListeners {
 		gl.OnRoundEnd()
 	}
 
-	if game.CurrentRoundNumber >= MaxRounds {
-		game.endMatch()
+	if g.CurrentRoundNumber >= MaxRounds {
+		g.endMatch()
 	}
 }
 
-func (game *Game) endMatch() {
-	game.MatchStarted = false
+func (g *Game) endMatch() {
+	g.MatchStarted = false
 
-	for _, gl := range game.gameListeners {
+	for _, gl := range g.gameListeners {
 		gl.OnMatchEnd()
 	}
-	delete(games, game.ChannelId)
+	delete(games, g.ChannelId)
 }
 
-func (game *Game) SetUserAnswer(userId string, answer string) {
-	u := game.GetUser(userId)
+func (g *Game) SetUserAnswer(userId string, answer string) {
+	u := g.GetUser(userId)
 	countryCode := countries.GetStringFromCountrySymbol(answer)
 
-	if u == nil || !countries.HasCountryCode(countryCode) || game.CurrentRound.Ended {
+	if u == nil || !countries.HasCountryCode(countryCode) || g.CurrentRound.Ended {
 		return
 	}
 
 	u.CurrentRoundAnswer = countryCode
 
-	game.CheckRoundEnd()
+	g.CheckRoundEnd()
 }
 
-func (game *Game) HasUser(userId string) bool {
-	for _, u := range game.Users {
+func (g *Game) HasUser(userId string) bool {
+	for _, u := range g.Users {
 		if u.Profile.ID == userId {
 			return true
 		}
@@ -173,8 +173,8 @@ func (game *Game) HasUser(userId string) bool {
 	return false
 }
 
-func (game *Game) GetUser(userId string) *User {
-	for _, u := range game.Users {
+func (g *Game) GetUser(userId string) *User {
+	for _, u := range g.Users {
 		if u.Profile.ID == userId {
 			return u
 		}
@@ -182,14 +182,14 @@ func (game *Game) GetUser(userId string) *User {
 	return nil
 }
 
-func (game *Game) CheckRoundEnd() {
-	for _, u := range game.Users {
+func (g *Game) CheckRoundEnd() {
+	for _, u := range g.Users {
 		if u.CurrentRoundAnswer == "" {
 			return
 		}
 	}
 
-	game.endRound()
+	g.endRound()
 }
 
 func GetGame(channelId string) *Game {
@@ -200,10 +200,10 @@ func SetSession(s *discordgo.Session) {
 	DiscordSession = s
 }
 
-func (game *Game) GetUsersSortedByScore() []*User {
+func (g *Game) GetUsersSortedByScore() []*User {
 	var users []*User
 
-	for _, u := range game.Users {
+	for _, u := range g.Users {
 		users = append(users, u)
 	}
 

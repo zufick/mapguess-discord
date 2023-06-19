@@ -8,6 +8,7 @@ const (
 	GameInvitationJoinLabel     = "Join"
 	GameInvitationErrNotFound   = "error while joining: cannot find this game"
 	GameInvitationErrUserExists = "user has already joined"
+	GameInvitationErrExists     = "game already exists"
 	GameInvitationStartLabel    = "Start match"
 	GameInvitationJoinedPlayers = "Joined players"
 	GameInvitationStarting      = "Starting the game..."

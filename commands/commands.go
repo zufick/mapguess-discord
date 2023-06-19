@@ -32,7 +32,7 @@ func RegisterCommands(dg *discordgo.Session) {
 	for _, command := range commands {
 		_, err := dg.ApplicationCommandCreate(dg.State.User.ID, "", command)
 		if err != nil {
-			log.Panicf("Cannot create command %v", command, err)
+			log.Panicf("Cannot create command %v", command)
 		}
 	}
 }

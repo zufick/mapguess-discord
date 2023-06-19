@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"mapguess-discord/game"
 )
@@ -8,15 +9,21 @@ import (
 var (
 	commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		"start": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			err := game.StartGame(i.ChannelID)
-			if err != nil {
-				s.InteractionRespond(i.Interaction, GetGameExistsResponse())
+			gameErr := game.StartGame(i.ChannelID)
+			if gameErr != nil {
+				err := s.InteractionRespond(i.Interaction, GetGameExistsResponse())
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 
-			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
 				Data: GetGameInvitationResponse(i.ChannelID),
 			})
+			if err != nil {
+				fmt.Println(err)
+			}
 		},
 	}
 )

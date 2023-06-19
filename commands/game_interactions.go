@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
+	"log"
 	"mapguess-discord/game"
 	"mapguess-discord/utils/countries"
 	"mapguess-discord/utils/phrases"
@@ -18,16 +19,26 @@ func (gi *GameInteractions) OnRoundStart() {
 	AddCountryReactions(m, gi.game.CurrentRound.CountryOptions)
 }
 func (gi *GameInteractions) OnRoundEnd() {
-	game.DiscordSession.ChannelMessageDelete(gi.game.ChannelId, gi.game.CurrentRound.Message.ID)
+	err := game.DiscordSession.ChannelMessageDelete(gi.game.ChannelId, gi.game.CurrentRound.Message.ID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	m, _ := game.DiscordSession.ChannelMessageSendComplex(gi.game.ChannelId, gi.GetRoundEndResponse())
 	gi.game.CurrentRound.ResultMessage = m
 
 	if gi.game.CurrentRoundNumber < game.MaxRounds {
-		game.DiscordSession.MessageReactionAdd(m.ChannelID, m.ID, "▶")
+		err = game.DiscordSession.MessageReactionAdd(m.ChannelID, m.ID, "▶")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 func (gi *GameInteractions) OnMatchEnd() {
-	game.DiscordSession.ChannelMessageSendComplex(gi.game.ChannelId, gi.GetMatchEndResponse())
+	_, err := game.DiscordSession.ChannelMessageSendComplex(gi.game.ChannelId, gi.GetMatchEndResponse())
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func OnMessageReaction(s *discordgo.Session, mr *discordgo.MessageReactionAdd) {
@@ -42,7 +53,10 @@ func OnMessageReaction(s *discordgo.Session, mr *discordgo.MessageReactionAdd) {
 			user := g.GetUser(mr.Member.User.ID)
 			if g.GetUser(mr.Member.User.ID).CurrentRoundAnswer != "" {
 				sym, _ := countries.GetCountryCodeSymbol(user.CurrentRoundAnswer)
-				s.MessageReactionRemove(mr.ChannelID, g.CurrentRound.Message.ID, sym, mr.Member.User.ID)
+				err := s.MessageReactionRemove(mr.ChannelID, g.CurrentRound.Message.ID, sym, mr.Member.User.ID)
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 			g.SetUserAnswer(mr.Member.User.ID, mr.Emoji.Name)
 		}
@@ -62,7 +76,10 @@ func OnMessageReaction(s *discordgo.Session, mr *discordgo.MessageReactionAdd) {
 				return
 			}
 		}
-		s.ChannelMessageDelete(g.ChannelId, g.CurrentRound.ResultMessage.ID)
+		err := s.ChannelMessageDelete(g.ChannelId, g.CurrentRound.ResultMessage.ID)
+		if err != nil {
+			fmt.Println(err)
+		}
 		g.StartRound()
 		return
 	}
@@ -205,6 +222,9 @@ func (gi *GameInteractions) GetMatchEndResponse() *discordgo.MessageSend {
 func AddCountryReactions(m *discordgo.Message, countryCodes []string) {
 	for _, c := range countryCodes {
 		cSymbol, _ := countries.GetCountryCodeSymbol(c)
-		game.DiscordSession.MessageReactionAdd(m.ChannelID, m.ID, cSymbol)
+		err := game.DiscordSession.MessageReactionAdd(m.ChannelID, m.ID, cSymbol)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }

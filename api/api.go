@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+const (
+	apiSequenceUrl      = "https://api.openstreetcam.org/2.0/sequence/?region=%d&sequenceStatus=public&sequenceType=photo&orderBy=dateAdded&orderDirection=desc&itemsPerPage=1&page=%d"
+	apiSequencePhotoUrl = "https://api.openstreetcam.org/2.0/sequence/%s/photos"
+)
+
 type RegionsResponse struct {
 	Result struct {
 		Data []struct {
@@ -54,7 +59,7 @@ func getRandomRegionSequences() RegionsResponse {
 
 func getRegionSequences(region Region) RegionsResponse {
 	randomPage := rand.Intn(region.maxPage)
-	regionSequencesUrl := fmt.Sprintf("https://api.openstreetcam.org/2.0/sequence/?region=%d&sequenceStatus=public&sequenceType=photo&orderBy=dateAdded&orderDirection=desc&itemsPerPage=1&page=%d", region.code, randomPage)
+	regionSequencesUrl := fmt.Sprintf(apiSequenceUrl, region.code, randomPage)
 	var regionSequences RegionsResponse
 
 	err := fetchApi(regionSequencesUrl, &regionSequences)
@@ -72,7 +77,10 @@ func getRegionSequences(region Region) RegionsResponse {
 func getSequence(regionSequences RegionsResponse) SequenceResponse {
 	var sequence SequenceResponse
 	var regSequence = regionSequences.Result.Data[rand.Intn(len(regionSequences.Result.Data))]
-	fetchApi(fmt.Sprintf("https://api.openstreetcam.org/2.0/sequence/%s/photos", regSequence.Id), &sequence)
+	err := fetchApi(fmt.Sprintf(apiSequencePhotoUrl, regSequence.Id), &sequence)
+	if err != nil {
+		log.Fatal(err)
+	}
 	sequence.CountryCode = regSequence.CountryCode
 	return sequence
 }
@@ -82,14 +90,22 @@ func fetchApi(url string, obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(res.Body)
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
 
-	json.Unmarshal(body, obj)
+	err = json.Unmarshal(body, obj)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

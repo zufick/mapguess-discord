@@ -259,8 +259,8 @@ var countries = map[string]string{
 }
 
 func GetRandomCountriesExcept(exceptCountryCode string) []string {
-	countriesExceptOne := []string{}
-	for k, _ := range countries {
+	var countriesExceptOne []string
+	for k := range countries {
 		if k != exceptCountryCode {
 			countriesExceptOne = append(countriesExceptOne, k)
 		}
