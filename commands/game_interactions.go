@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"mapguess-discord/game"
-	"mapguess-discord/utils"
+	"mapguess-discord/utils/countries"
+	"mapguess-discord/utils/phrases"
 )
 
 type GameInteractions struct {
@@ -32,7 +33,14 @@ func OnMessageReaction(s *discordgo.Session, mr *discordgo.MessageReactionAdd) {
 	}
 
 	if mr.MessageID == g.CurrentRound.Message.ID {
-		g.SetUserAnswer(mr.Member.User.ID, mr.Emoji.Name)
+		if g.HasUser(mr.Member.User.ID) {
+			user := g.GetUser(mr.Member.User.ID)
+			if g.GetUser(mr.Member.User.ID).CurrentRoundAnswer != "" {
+				sym, _ := countries.GetCountryCodeSymbol(user.CurrentRoundAnswer)
+				s.MessageReactionRemove(mr.ChannelID, g.CurrentRound.Message.ID, sym, mr.Member.User.ID)
+			}
+			g.SetUserAnswer(mr.Member.User.ID, mr.Emoji.Name)
+		}
 		return
 	}
 
@@ -67,51 +75,51 @@ func GetGameExistsResponse() *discordgo.InteractionResponse {
 	return &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: ":x: The game has already started",
+			Content: phrases.GameExistsResponseContent,
 			Flags:   discordgo.MessageFlagsEphemeral,
 		},
 	}
 }
 
 func GetGameInvitationResponse(channelId string) *discordgo.InteractionResponseData {
-	game := game.GetGame(channelId)
+	g := game.GetGame(channelId)
 
-	description := "New game invitation"
+	description := phrases.GameInvitationDescription
 	buttons := []discordgo.MessageComponent{
 		discordgo.Button{
 			Emoji: discordgo.ComponentEmoji{
 				Name: "➕",
 			},
-			Label:    "Join",
+			Label:    phrases.GameInvitationJoinLabel,
 			Style:    discordgo.SecondaryButton,
 			CustomID: "invitation_join",
 		},
 	}
 
-	if len(game.Users) > 1 {
+	if len(g.Users) > 1 {
 		buttons = append(buttons, discordgo.Button{
 			Emoji: discordgo.ComponentEmoji{
 				Name: "▶",
 			},
-			Label:    "Start match",
+			Label:    phrases.GameInvitationStartLabel,
 			Style:    discordgo.SecondaryButton,
 			CustomID: "invitation_start",
 		})
 	}
 
-	if len(game.Users) > 0 {
-		description += "\nJoined players:\n"
+	if len(g.Users) > 0 {
+		description += "\n" + phrases.GameInvitationJoinedPlayers + ":\n"
 
-		for _, v := range game.Users {
+		for _, v := range g.Users {
 			description += "@" + v.Profile.Username + "\n"
 		}
 	}
 
 	return &discordgo.InteractionResponseData{
-		Content: "Starting the game...",
+		Content: phrases.GameInvitationStarting,
 		Embeds: []*discordgo.MessageEmbed{
 			{
-				Title:       "Game invitation",
+				Title:       phrases.GameInvitationTitle,
 				Description: description,
 				Image:       &discordgo.MessageEmbedImage{URL: "https://cdn.discordapp.com/attachments/630411106506113036/1118465338300964944/map_copy.png"},
 			},
@@ -127,16 +135,16 @@ func GetGameInvitationResponse(channelId string) *discordgo.InteractionResponseD
 func (gi *GameInteractions) GetCurrentRoundResponse() *discordgo.MessageSend {
 	description := "Select one country:"
 	for _, c := range gi.game.CurrentRound.CountryOptions {
-		symbol, _ := utils.GetCountryCodeSymbol(c)
-		name := utils.GetCountryName(c)
+		symbol, _ := countries.GetCountryCodeSymbol(c)
+		name := countries.GetCountryName(c)
 		description += fmt.Sprintf("\n %s - %s \n", symbol, name)
 	}
 
 	return &discordgo.MessageSend{
-		Content: "Guess where it is",
+		Content: phrases.CurrentRoundMessageContent,
 		Embeds: []*discordgo.MessageEmbed{
 			{
-				Title:       "Guess where it is",
+				Title:       phrases.CurrentRoundMessageContent,
 				Description: description,
 				Image:       &discordgo.MessageEmbedImage{URL: gi.game.CurrentRound.ImgUrl},
 			},
@@ -145,24 +153,24 @@ func (gi *GameInteractions) GetCurrentRoundResponse() *discordgo.MessageSend {
 }
 
 func (gi *GameInteractions) GetRoundEndResponse() *discordgo.MessageSend {
-	countryEmoji, _ := utils.GetCountryCodeSymbol(gi.game.CurrentRound.CorrectCountry)
-	description := fmt.Sprintf("Round ended! Correct country: %s %s.\n", countryEmoji, utils.GetCountryName(gi.game.CurrentRound.CorrectCountry))
+	countryEmoji, _ := countries.GetCountryCodeSymbol(gi.game.CurrentRound.CorrectCountry)
+	description := fmt.Sprintf(phrases.RoundEndedText+" %s %s.\n", countryEmoji, countries.GetCountryName(gi.game.CurrentRound.CorrectCountry))
 
 	if len(gi.game.CurrentRound.Winners) > 0 {
-		description += "\nWinners:\n"
+		description += "\n" + phrases.RoundEndedWinners + "\n"
 		for _, w := range gi.game.CurrentRound.Winners {
-			description += fmt.Sprintf("%s (+1 point, total: %d)\n", w.Profile.Username, w.Score)
+			description += fmt.Sprintf("%s "+phrases.RoundEndedUserScore+"\n", w.Profile.Username, w.Score)
 		}
 	} else {
-		description += "There are no winners\n"
+		description += phrases.RoundEndedNoWinners + "\n"
 	}
 
-	description += "\nPress ▶ emoji to start the next round\n"
+	description += "\n" + phrases.RoundEndedRestartText + "\n"
 
 	return &discordgo.MessageSend{
 		Embeds: []*discordgo.MessageEmbed{
 			{
-				Title:       "Round ended",
+				Title:       phrases.RoundEndedTitle,
 				Description: description,
 				Image:       &discordgo.MessageEmbedImage{URL: gi.game.CurrentRound.ImgUrl},
 			},
@@ -172,7 +180,7 @@ func (gi *GameInteractions) GetRoundEndResponse() *discordgo.MessageSend {
 
 func AddCountryReactions(m *discordgo.Message, countryCodes []string) {
 	for _, c := range countryCodes {
-		cSymbol, _ := utils.GetCountryCodeSymbol(c)
+		cSymbol, _ := countries.GetCountryCodeSymbol(c)
 		game.DiscordSession.MessageReactionAdd(m.ChannelID, m.ID, cSymbol)
 	}
 }

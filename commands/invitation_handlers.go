@@ -14,6 +14,7 @@ var (
 					Type: discordgo.InteractionResponseChannelMessageWithSource,
 					Data: &discordgo.InteractionResponseData{
 						Content: err.Error(),
+						Flags:   discordgo.MessageFlagsEphemeral,
 					},
 				})
 				return

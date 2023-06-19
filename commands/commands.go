@@ -3,13 +3,14 @@ package commands
 import (
 	"github.com/bwmarrin/discordgo"
 	"log"
+	"mapguess-discord/utils/phrases"
 )
 
 var (
 	commands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "start",
-			Description: "Starts the game",
+			Description: phrases.StartCommandDescription,
 		},
 	}
 )

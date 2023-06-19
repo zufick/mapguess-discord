@@ -4,7 +4,8 @@ import (
 	"errors"
 	"github.com/bwmarrin/discordgo"
 	"mapguess-discord/api"
-	"mapguess-discord/utils"
+	"mapguess-discord/utils/countries"
+	"mapguess-discord/utils/phrases"
 	"math/rand"
 	"time"
 )
@@ -67,14 +68,14 @@ func StartGame(channelId string) error {
 
 func JoinGame(channelId string, i *discordgo.Interaction) error {
 	if _, ok := games[channelId]; !ok {
-		return errors.New("Error while joining. Cannot find this game.")
+		return errors.New(phrases.GameInvitationErrNotFound)
 	}
 
 	user := i.Member.User
 
 	_, ok := games[channelId].Users[user.ID]
 	if ok {
-		return errors.New("User has already joined.")
+		return errors.New(phrases.GameInvitationErrUserExists)
 	}
 
 	games[channelId].Users[user.ID] = &User{
@@ -96,7 +97,7 @@ func (game *Game) StartRound() {
 	rand.Seed(time.Now().Unix())
 	photo := photos.Result.Data[rand.Intn(len(photos.Result.Data))]
 
-	countries := utils.GetRandomCountriesExcept(photos.CountryCode)[:3:4]
+	countries := countries.GetRandomCountriesExcept(photos.CountryCode)[:3:4]
 	countries = append(countries, photos.CountryCode)
 
 	rand.Seed(time.Now().UnixNano())
@@ -132,9 +133,9 @@ func (game *Game) endRound() {
 
 func (game *Game) SetUserAnswer(userId string, answer string) {
 	u := game.GetUser(userId)
-	countryCode := utils.GetStringFromCountrySymbol(answer)
+	countryCode := countries.GetStringFromCountrySymbol(answer)
 
-	if u == nil || !utils.HasCountryCode(countryCode) || game.CurrentRound.Ended {
+	if u == nil || !countries.HasCountryCode(countryCode) || game.CurrentRound.Ended {
 		return
 	}
 
