@@ -4,7 +4,7 @@
 
 # Overview
 Discord game where players have to guess the country from a photo.\
-The app uses [DiscordGo](https://github.com/bwmarrin/discordgo) for Discord bindings & [OpenStreetCam API](http://doc.kartaview.org) to get photos
+The app uses [DiscordGo](https://github.com/bwmarrin/discordgo) for Discord bindings & [OpenStreetCam API](http://doc.kartaview.org) to get photos.
 
 ![discord dialog photo](https://media.discordapp.net/attachments/151589953678082048/1120260481337282620/image.png)
 
